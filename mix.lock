@@ -1,0 +1,3 @@
+%{
+  "mix_rebar3": {:hex, :mix_rebar3, "0.1.0", "0af61db06f7c596e346f8e7181521c02df29cafdb03ef50a74bf9fc4c6bf4fc2", [:mix], [], "hexpm", "320c4d8a7b3cc2fea07b63af61670fbf211ff81a449372cb6518d8571598eb5b"},
+}
