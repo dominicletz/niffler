@@ -176,6 +176,8 @@ scan_params(ErlNifEnv *env, ERL_NIF_TERM erl_params, ERL_NIF_TERM *ret)
 	}
 
 	params.params = malloc(sizeof(params.params[0]) * params.size);
+	memset(params.params, 0, sizeof(params.params[0]) * params.size);
+	
 	if (!params.params)
 	{
 		*ret = error_result(env, "could not allocate parameter list");

@@ -21,7 +21,7 @@ defmodule Tinycc.MixProject do
 
   defp deps do
     [
-      {:mix_rebar3, "~> 0.1.0"}
+      {:mix_rebar3, github: "dominicletz/mix_rebar3"}
     ]
   end
 end
