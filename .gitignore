@@ -22,6 +22,12 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 tinycc-*.tar
 
+# Libraries
+*.so
+
+# Crashdumps from rebar3
+*.crashdump
+
 
 # Temporary files for e.g. tests
 /tmp

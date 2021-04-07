@@ -8,7 +8,7 @@ defmodule Tinycc.MixProject do
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      compilers: [:rebar3]
+      compilers: [:rebar3] ++ Mix.compilers
     ]
   end
 
