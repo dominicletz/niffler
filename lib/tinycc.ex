@@ -6,6 +6,39 @@ defmodule Tinycc do
   """
 
   @doc false
+  defmacro __using__(_opts) do
+    quote do
+      import Tinycc
+      @tinycc_module __MODULE__
+    end
+  end
+
+  defmacro defc(name, inputs, outputs, do: source) do
+    quote do
+      def unquote(name)(args) do
+        key = {@tinycc_module, unquote(name)}
+
+        :persistent_term.get(key, nil)
+        |> case do
+          nil ->
+            prog = Tinycc.compile!(unquote(source), unquote(inputs), unquote(outputs))
+            :persistent_term.put(key, prog)
+            prog
+
+          prog ->
+            prog
+        end
+        |> Tinycc.run(args)
+      end
+    end
+  end
+
+  @doc false
+  def gen!(key, source, inputs, outputs) do
+    :persistent_term.put(key, Tinycc.compile!(source, inputs, outputs))
+  end
+
+  @doc false
   def init do
     :ok =
       case :code.priv_dir(:tinycc) do
@@ -22,19 +55,6 @@ defmodule Tinycc do
       |> Path.join("tinycc.nif")
       |> String.to_charlist()
       |> :erlang.load_nif(0)
-  end
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Tinycc.hello()
-      :world
-
-  """
-  def hello do
-    :world
   end
 
   @doc """

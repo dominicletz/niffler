@@ -1,21 +1,43 @@
 # Tinycc
 
-**TODO: Add description**
+Tinycc is a C-JIT implemented is nif binding to (libtcc)[https://bellard.org/tcc/]. Tinycc allows converting small c fragments into nif backed functions *AT RUNTIME*
 
-## Installation
+# Module Example:
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `tinycc` to your list of dependencies in `mix.exs`:
+```
+defmodule Example do
+  use Tinycc
 
-```elixir
-def deps do
-  [
-    {:tinycc, "~> 0.1.0"}
-  ]
+  defc :count_zeros, [str: :binary], ret: :int do
+    """
+    ret = 0;
+    while(str->size--) {
+      if (*str->data++ == 0) ret++;
+    }
+    """
+  end
 end
+
+{:ok, [2]} = Example.count_zeros(<<0,11,0>>)
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/tinycc](https://hexdocs.pm/tinycc).
+# Shell Example:
 
+```
+  iex> {:ok, prog} = Tinycc.compile("ret = a * b;", [a: :int, b: :int], [ret: :int])
+  iex> Tinycc.run(prog, [3, 4])
+  {:ok, [12]}
+
+```
+
+# Todos
+
+This library is work in progress. Feel free to open a PR to any of these:
+
+* Test on windows + mac
+* Integrate with CI
+* Add more tests for string/binary types
+* Compile functions on module load not on first call
+* Use async thread to avoid blocking in long-running nifs
+* Better documentation
+* Include c-standard library libtcc1.a 
