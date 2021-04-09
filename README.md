@@ -18,7 +18,7 @@ defmodule Example do
   end
 end
 
-{:ok, [2]} = Example.count_zeros(<<0,11,0>>)
+{:ok, [2]} = Example.count_zeros([<<0,11,0>>])
 ```
 
 # Shell Example:

@@ -1,5 +1,6 @@
 defmodule Tinycc do
   @on_load :init
+  @dialyzer {:no_return, nif_compile: 3, nif_run: 2}
 
   @moduledoc """
   Documentation for `Tinycc`.
@@ -114,8 +115,9 @@ defmodule Tinycc do
 
   ## Examples
 
-      iex> Tinycc.hello()
-      :world
+      iex> {:ok, prog} = Tinycc.compile("ret = a << 2;", [a: :int], [ret: :int])
+      iex> Tinycc.run(prog, [5])
+      {:ok, [20]}
 
   """
   def run(prog, args) do

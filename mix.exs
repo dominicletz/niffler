@@ -8,7 +8,7 @@ defmodule Tinycc.MixProject do
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      compilers: [:rebar3] ++ Mix.compilers
+      compilers: [:rebar3] ++ Mix.compilers()
     ]
   end
 
@@ -21,7 +21,8 @@ defmodule Tinycc.MixProject do
 
   defp deps do
     [
-      {:mix_rebar3, github: "dominicletz/mix_rebar3"}
+      {:mix_rebar3, github: "dominicletz/mix_rebar3"},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 end
