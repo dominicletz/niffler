@@ -4,7 +4,8 @@ elixir:
   - 1.12
 
 otp_release:
-  - 23.3
+  - 23.2.5
 
 script:
+  - MIX_ENV=test mix compile
   - mix test

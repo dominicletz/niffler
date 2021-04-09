@@ -1,4 +1,4 @@
-# Tinycc
+# Tinycc [![Build Status](https://travis-ci.com/dominicletz/tinycc.svg?branch=main)](https://travis-ci.com/dominicletz/tinycc)
 
 Tinycc is a C-JIT implemented is nif binding to (libtcc)[https://bellard.org/tcc/]. Tinycc allows converting small c fragments into nif backed functions *AT RUNTIME*
 
