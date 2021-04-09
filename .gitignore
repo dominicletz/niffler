@@ -24,6 +24,8 @@ tinycc-*.tar
 
 # Libraries
 *.so
+*.o
+*.d
 
 # Crashdumps from rebar3
 *.crashdump
