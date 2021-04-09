@@ -66,6 +66,7 @@ struct Params
 struct Program
 {
 	TCCState *state;
+	int (*runop)();
 	struct Params inputs;
 	struct Params outputs;
 };
@@ -177,7 +178,7 @@ scan_params(ErlNifEnv *env, ERL_NIF_TERM erl_params, ERL_NIF_TERM *ret)
 
 	params.params = malloc(sizeof(params.params[0]) * params.size);
 	memset(params.params, 0, sizeof(params.params[0]) * params.size);
-	
+
 	if (!params.params)
 	{
 		*ret = error_result(env, "could not allocate parameter list");
@@ -256,6 +257,23 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		return error_result(env, "could not relocate program");
 	}
 
+	program->runop = tcc_get_symbol(program->state, "run");
+	if (!program->runop)
+	{
+		return error_result(env, "void run() is undefined");
+	}
+
+	for (int i = 0; i < program->outputs.size; i++)
+	{
+		struct Param *param = program->outputs.params + i;
+
+		param->symbol = tcc_get_symbol(program->state, param->name);
+		if (!param->symbol)
+		{
+			return error_result(env, "symbol not found");
+		}
+	}
+
 	return ok_result(env, term);
 }
 
@@ -325,27 +343,13 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		}
 	}
 
-	int (*const runop)() = tcc_get_symbol(program->state, "run");
-
-	if (!runop)
-	{
-		return error_result(env, "run operation not defined");
-	}
-
-	runop();
+	program->runop();
 
 	ERL_NIF_TERM ret = enif_make_list(env, 0);
 	for (int i = 0; i < program->outputs.size; i++)
 	{
 		ERL_NIF_TERM cell;
 		struct Param *param = program->outputs.params + i;
-
-		param->symbol = tcc_get_symbol(program->state, param->name);
-
-		if (!param->symbol)
-		{
-			return error_result(env, "symbol not found");
-		}
 
 		switch (param->type)
 		{
@@ -382,123 +386,6 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 	}
 
 	return ok_result(env, ret);
-}
-
-#define GET_SYMBOL()                                                    \
-	void *symbol = 0;                                                   \
-	{                                                                   \
-		ERL_NIF_TERM term = get_symbol(env, argv[0], argv[1], &symbol); \
-		if (!symbol)                                                    \
-			return term;                                                \
-	}
-
-static ERL_NIF_TERM
-get_symbol(
-	ErlNifEnv *env, ERL_NIF_TERM state_arg, ERL_NIF_TERM var_arg,
-	void **symbol)
-{
-	ErlNifBinary varname;
-	TCCState *state;
-	char symbol_name[255];
-
-	if (!enif_get_resource(env, state_arg, PROGRAM_TYPE, (void **)&state))
-	{
-		return enif_make_badarg(env);
-	}
-
-	if (!enif_inspect_binary(env, var_arg, &varname))
-	{
-		return enif_make_badarg(env);
-	}
-
-	if (varname.size >= sizeof(symbol_name))
-	{
-		return error_result(env, "symbol name too long");
-	}
-
-	memcpy(symbol_name, varname.data, varname.size);
-	symbol_name[varname.size] = 0;
-
-	*symbol = tcc_get_symbol(state, (const char *)varname.data);
-
-	if (!*symbol)
-	{
-		return error_result(env, "can't find symbol");
-	}
-
-	ERL_NIF_TERM none = 0;
-	return none;
-}
-
-static ERL_NIF_TERM
-get_string(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
-{
-	GET_SYMBOL();
-
-	char *value = (char *)symbol;
-	ERL_NIF_TERM ret;
-	unsigned char *data = enif_make_new_binary(env, strlen(value), &ret);
-
-	if (!data)
-	{
-		return error_result(env, "couldn't create a binary");
-	}
-
-	memcpy(data, value, strlen(value));
-	return ok_result(env, ret);
-}
-
-static ERL_NIF_TERM
-get_data(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
-{
-	GET_SYMBOL();
-
-	int *size = 0;
-	if (!enif_get_int(env, argv[2], size))
-	{
-		return enif_make_badarg(env);
-	}
-
-	if (*size < 0)
-	{
-		return enif_make_badarg(env);
-	}
-
-	char *value = (char *)symbol;
-	ERL_NIF_TERM ret;
-	unsigned char *data = enif_make_new_binary(env, *size, &ret);
-
-	if (!data)
-	{
-		return error_result(env, "couldn't create a binary");
-	}
-
-	memcpy(data, value, *size);
-	return ok_result(env, ret);
-}
-
-static ERL_NIF_TERM
-get_int(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
-{
-	GET_SYMBOL();
-	int *value = (int *)symbol;
-	return enif_make_int(env, *value);
-}
-
-static ERL_NIF_TERM
-get_int64(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
-{
-	GET_SYMBOL();
-	ErlNifSInt64 *value = (ErlNifSInt64 *)symbol;
-	return enif_make_int64(env, *value);
-}
-
-static ERL_NIF_TERM
-get_uint64(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
-{
-	GET_SYMBOL();
-	ErlNifUInt64 *value = (ErlNifUInt64 *)symbol;
-	return enif_make_int64(env, *value);
 }
 
 static ERL_NIF_TERM error_result(ErlNifEnv *env, char *error_msg)

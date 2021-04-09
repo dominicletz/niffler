@@ -30,11 +30,28 @@ end
 
 ```
 
+# Benchmarks
+
+```
+> mix run bench/count_zeros.exs
+...
+Benchmarking count_zeros_elixir...
+Benchmarking count_zeros_nif...
+
+Name                         ips        average  deviation         median         99th %
+count_zeros_nif           6.87 K      145.47 μs    ±15.18%      141.22 μs      223.31 μs
+count_zeros_elixir        3.54 K      282.68 μs    ±12.06%      271.96 μs      404.90 μs
+
+Comparison: 
+count_zeros_nif           6.87 K
+count_zeros_elixir        3.54 K - 1.94x slower +137.22 μs
+```
+
 # Todos
 
 This library is work in progress. Feel free to open a PR to any of these:
 
-* Test on windows + mac
+* Test on windows
 * Integrate with CI
 * Add more tests for string/binary types
 * Compile functions on module load not on first call

@@ -1,6 +1,5 @@
 defmodule Tinycc do
   @on_load :init
-  @dialyzer {:no_return, nif_compile: 3, nif_run: 2}
 
   @moduledoc """
   Documentation for `Tinycc`.
@@ -81,19 +80,35 @@ defmodule Tinycc do
         Enum.map(outputs, fn {name, type} -> "#{type_name(type)} #{name};" end)
       ]
       |> Enum.concat()
-      |> Enum.join("\n")
+      |> Enum.join("\n  ")
+
+    run =
+      if String.contains?(code, "void run()") do
+        code
+      else
+        """
+        void run() {
+          #{code}
+        }
+        """
+      end
 
     code = """
       #{header()}
       #{type_defs}
-      void run() {
-        #{code}
-      }
+
+      #{run}
     """
 
     case nif_compile(code <> <<0>>, inputs, outputs) do
       {:error, message} ->
-        IO.puts(code)
+        lines =
+          String.split(code, "\n")
+          |> Enum.with_index(1)
+          |> Enum.map(fn {line, num} -> String.pad_leading("#{num}: ", 4) <> line end)
+          |> Enum.join("\n")
+
+        IO.puts(lines)
         {:error, message <> " in '#{code}'"}
 
       other ->
@@ -107,7 +122,7 @@ defmodule Tinycc do
   end
 
   defp nif_compile(_code, _inputs, _outputs) do
-    exit(:nif_library_not_loaded)
+    :erlang.nif_error(:nif_library_not_loaded)
   end
 
   @doc """
@@ -130,7 +145,7 @@ defmodule Tinycc do
   end
 
   defp nif_run(_state, _args) do
-    exit(:nif_library_not_loaded)
+    :erlang.nif_error(:nif_library_not_loaded)
   end
 
   defp type_name(:int), do: "int64_t"
@@ -155,5 +170,6 @@ defmodule Tinycc do
         unsigned char* data;
       };
     """
+    |> String.trim()
   end
 end
