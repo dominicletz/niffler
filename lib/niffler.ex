@@ -66,7 +66,7 @@ defmodule Niffler do
       iex> Niffler.run(prog, [3, 4])
       {:ok, [12]}
 
-      iex> code = "ret = 0; for (int i = 0; i < str->size; i++) if (str->data[i] == 0) ret++;"
+      iex> code = "ret = 0; for (int i = 0; i < str.size; i++) if (str.data[i] == 0) ret++;"
       iex> {:ok, prog} = Niffler.compile(code, [str: :binary], [ret: :int])
       iex> Niffler.run(prog, [<<0,1,1,0,1,5,0>>])
       {:ok, [3]}
@@ -76,18 +76,28 @@ defmodule Niffler do
       when is_binary(code) and is_list(inputs) and is_list(outputs) do
     type_defs =
       [
-        Enum.map(inputs, fn {name, type} -> "extern #{type_name(type)} #{name};" end),
-        Enum.map(outputs, fn {name, type} -> "#{type_name(type)} #{name};" end)
+        Enum.with_index(inputs)
+        |> Enum.map(fn {{name, type}, idx} ->
+          "#define #{name} (input[#{idx}].#{value_name(type)})"
+        end),
+        Enum.with_index(outputs)
+        |> Enum.map(fn {{name, type}, idx} ->
+          "#define #{name} (output[#{idx}].#{value_name(type)})"
+        end)
       ]
       |> Enum.concat()
       |> Enum.join("\n  ")
 
     run =
-      if String.contains?(code, "void run()") do
-        code
+      if String.contains?(code, "DO_RUN {") do
+        String.replace(code, "DO_RUN {", """
+          void run(Param *input, Param *output) {
+            #{type_defs}
+        """)
       else
         """
-        void run() {
+        void run(Param *input, Param *output) {
+          #{type_defs}
           #{code}
         }
         """
@@ -95,21 +105,27 @@ defmodule Niffler do
 
     code = """
       #{header()}
-      #{type_defs}
 
       #{run}
     """
 
     case nif_compile(code <> <<0>>, inputs, outputs) do
       {:error, message} ->
-        lines =
-          String.split(code, "\n")
-          |> Enum.with_index(1)
-          |> Enum.map(fn {line, num} -> String.pad_leading("#{num}: ", 4) <> line end)
-          |> Enum.join("\n")
+        message =
+          if message == "compilation error" do
+            lines =
+              String.split(code, "\n")
+              |> Enum.with_index(1)
+              |> Enum.map(fn {line, num} -> String.pad_leading("#{num}: ", 4) <> line end)
+              |> Enum.join("\n")
 
-        IO.puts(lines)
-        {:error, message <> " in '#{code}'"}
+            IO.puts(lines)
+            message <> " in '#{code}'"
+          else
+            message
+          end
+
+        {:error, message}
 
       other ->
         other
@@ -126,7 +142,7 @@ defmodule Niffler do
   end
 
   @doc """
-  Hello world.
+  Executes the given Niffler program and return any output values
 
   ## Examples
 
@@ -148,27 +164,34 @@ defmodule Niffler do
     :erlang.nif_error(:nif_library_not_loaded)
   end
 
-  defp type_name(:int), do: "int64_t"
-  defp type_name(:int64), do: "int64_t"
-  defp type_name(:uint64), do: "uint64_t"
-  defp type_name(:double), do: "double"
-  defp type_name(:binary), do: "struct Binary*"
+  defp value_name(:int), do: "integer64"
+  defp value_name(:int64), do: "integer64"
+  defp value_name(:uint64), do: "uinteger64"
+  defp value_name(:double), do: "doubleval"
+  defp value_name(:binary), do: "binary"
 
   defp header() do
     """
-      typedef signed char int8_t;
-      typedef unsigned char   uint8_t;
-      typedef short  int16_t;
-      typedef unsigned short  uint16_t;
-      typedef int  int32_t;
-      typedef unsigned   uint32_t;
-      typedef long long  int64_t;
-      typedef unsigned long long   uint64_t;
+      typedef signed char         int8_t;
+      typedef unsigned char       uint8_t;
+      typedef short               int16_t;
+      typedef unsigned short      uint16_t;
+      typedef int                 int32_t;
+      typedef unsigned            uint32_t;
+      typedef long long           int64_t;
+      typedef unsigned long long  uint64_t;
 
-      struct Binary {
+      typedef struct {
         uint64_t size;
         unsigned char* data;
-      };
+      } Binary;
+
+      typedef union {
+        Binary binary;
+        int64_t integer64;
+        uint64_t uinteger64;
+        double doubleval;
+      } Param;
     """
     |> String.trim()
   end

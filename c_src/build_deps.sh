@@ -1,4 +1,4 @@
 #!/bin/bash
 cd c_src/tinycc
 ./configure
-make CFLAGS=-fPIC LDFLAGS=-fPIC libtcc.a
+make CFLAGS="-O3 -fPIC" LDFLAGS=-fPIC libtcc.a

@@ -11,34 +11,33 @@ static void free_state(ErlNifEnv *env, void *obj);
 
 static ErlNifResourceType *PROGRAM_TYPE;
 
-struct Binary
+typedef struct
 {
 	uint64_t size;
 	unsigned char *data;
-};
+} Binary;
 
-struct Param
+typedef struct
 {
 	char name[64];
 	int type;
-	int size;
-	// No member can be larger than *symbol or it will get lost in assignment
-	union
-	{
-		void *symbol;
-		char *string;
-		struct Binary *binary;
-		int64_t integer64;
-		uint64_t uinteger64;
-		double doubleval;
-	};
-};
+} ParamDef;
+
+typedef union
+{
+	Binary binary;
+	int64_t integer64;
+	uint64_t uinteger64;
+	double doubleval;
+} Param;
 
 #define TYPE_INT64 1
 #define TYPE_UINT64 2
 // #define TYPE_STRING 4
 #define TYPE_BINARY 5
 #define TYPE_DOUBLE 6
+
+#define MAX_ARGS 10
 
 static int
 atom_to_type(char *atom)
@@ -57,19 +56,19 @@ atom_to_type(char *atom)
 	return -1;
 }
 
-struct Params
+typedef struct
 {
 	unsigned size;
-	struct Param *params;
-};
+	ParamDef *params;
+} Params;
 
-struct Program
+typedef struct
 {
 	TCCState *state;
-	int (*runop)();
-	struct Params inputs;
-	struct Params outputs;
-};
+	void (*runop)(Param *, Param *);
+	Params inputs;
+	Params outputs;
+} Program;
 
 static int
 load(ErlNifEnv *env, void **priv, ERL_NIF_TERM load_info)
@@ -96,7 +95,7 @@ unload(ErlNifEnv *env, void *priv)
 }
 
 static int
-scan_param(ErlNifEnv *env, ERL_NIF_TERM erlp, struct Param *p, unsigned size, ERL_NIF_TERM *ret)
+scan_param(ErlNifEnv *env, ERL_NIF_TERM erlp, ParamDef *p, unsigned size, ERL_NIF_TERM *ret)
 {
 	if (!size)
 	{
@@ -160,10 +159,10 @@ scan_param(ErlNifEnv *env, ERL_NIF_TERM erlp, struct Param *p, unsigned size, ER
 	return scan_param(env, tail, p + 1, size - 1, ret);
 }
 
-static struct Params
+static Params
 scan_params(ErlNifEnv *env, ERL_NIF_TERM erl_params, ERL_NIF_TERM *ret)
 {
-	struct Params params = {};
+	Params params = {};
 	if (!enif_get_list_length(env, erl_params, &params.size))
 	{
 		*ret = error_result(env, "parameter is not a list");
@@ -207,13 +206,13 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 	}
 
 	ERL_NIF_TERM ret = error_result(env, "failed to scan input parameters");
-	struct Params inputs = scan_params(env, argv[1], &ret);
+	Params inputs = scan_params(env, argv[1], &ret);
 	if (!inputs.size)
 	{
 		return ret;
 	}
 	ret = error_result(env, "failed to scan output parameters");
-	struct Params outputs = scan_params(env, argv[2], &ret);
+	Params outputs = scan_params(env, argv[2], &ret);
 	if (!outputs.size)
 	{
 		free(inputs.params);
@@ -228,7 +227,7 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		return error_result(env, "could not initiate tcc state");
 	}
 
-	struct Program *program = enif_alloc_resource(PROGRAM_TYPE, sizeof(struct Program));
+	Program *program = enif_alloc_resource(PROGRAM_TYPE, sizeof(Program));
 	program->state = state;
 	program->inputs = inputs;
 	program->outputs = outputs;
@@ -246,11 +245,8 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		return error_result(env, "compilation error");
 	}
 
-	for (int i = 0; i < inputs.size; i++)
-	{
-		tcc_add_symbol(state, inputs.params[i].name, &inputs.params[i].string);
-	}
-
+	// TODO: add some library functions
+	// tcc_add_symbol(state, name, &ptr);
 	tcc_set_options(state, "-nostdlib");
 	if (tcc_relocate(state, TCC_RELOCATE_AUTO) != 0)
 	{
@@ -263,23 +259,12 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		return error_result(env, "void run() is undefined");
 	}
 
-	for (int i = 0; i < program->outputs.size; i++)
-	{
-		struct Param *param = program->outputs.params + i;
-
-		param->symbol = tcc_get_symbol(program->state, param->name);
-		if (!param->symbol)
-		{
-			return error_result(env, "symbol not found");
-		}
-	}
-
 	return ok_result(env, term);
 }
 
 static void free_state(ErlNifEnv *env, void *obj)
 {
-	struct Program *program = (struct Program *)obj;
+	Program *program = (Program *)obj;
 	tcc_delete(program->state);
 	free(program->inputs.params);
 	free(program->outputs.params);
@@ -288,16 +273,17 @@ static void free_state(ErlNifEnv *env, void *obj)
 static ERL_NIF_TERM
 run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-	struct Program *program;
+	Program *program;
 
 	if (!enif_get_resource(env, argv[0], PROGRAM_TYPE, (void *)&program))
 	{
 		return enif_make_badarg(env);
 	}
 
-	ERL_NIF_TERM head, tail = argv[1];
-	struct Binary bin;
+	Param input[MAX_ARGS] = {};
+	Param output[MAX_ARGS] = {};
 
+	ERL_NIF_TERM head, tail = argv[1];
 	for (int i = 0; i < program->inputs.size; i++)
 	{
 		if (!enif_get_list_cell(env, tail, &head, &tail))
@@ -308,19 +294,19 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		switch (program->inputs.params[i].type)
 		{
 		case TYPE_INT64:
-			if (!enif_get_int64(env, head, &program->inputs.params[i].integer64))
+			if (!enif_get_int64(env, head, &input[i].integer64))
 			{
 				return error_result(env, "parameter should be int64");
 			}
 			break;
 		case TYPE_UINT64:
-			if (!enif_get_uint64(env, head, &program->inputs.params[i].uinteger64))
+			if (!enif_get_uint64(env, head, &input[i].uinteger64))
 			{
 				return error_result(env, "parameter should be uint64");
 			}
 			break;
 		case TYPE_DOUBLE:
-			if (!enif_get_double(env, head, &program->inputs.params[i].doubleval))
+			if (!enif_get_double(env, head, &input[i].doubleval))
 			{
 				return error_result(env, "parameter should be double");
 			}
@@ -333,9 +319,8 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 			{
 				return error_result(env, "parameter should be binary");
 			}
-			bin.size = erlbin.size;
-			bin.data = erlbin.data;
-			program->inputs.params[i].binary = &bin;
+			input[i].binary.size = erlbin.size;
+			input[i].binary.data = erlbin.data;
 			break;
 		}
 		default:
@@ -343,40 +328,35 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		}
 	}
 
-	program->runop();
+	program->runop(input, output);
 
 	ERL_NIF_TERM ret = enif_make_list(env, 0);
 	for (int i = 0; i < program->outputs.size; i++)
 	{
 		ERL_NIF_TERM cell;
-		struct Param *param = program->outputs.params + i;
+		Param *param = output + i;
 
-		switch (param->type)
+		switch (program->outputs.params[i].type)
 		{
 		case TYPE_INT64:
-			cell = enif_make_int64(env, *(ErlNifSInt64 *)param->symbol);
+			cell = enif_make_int64(env, param->integer64);
 			break;
 		case TYPE_UINT64:
-			cell = enif_make_uint64(env, *(ErlNifUInt64 *)param->symbol);
+			cell = enif_make_uint64(env, param->uinteger64);
 			break;
 		case TYPE_DOUBLE:
-			cell = enif_make_double(env, *(double *)param->symbol);
+			cell = enif_make_double(env, param->doubleval);
 			break;
 		// case TYPE_STRING:
 		case TYPE_BINARY:
 		{
-			if (!param->binary)
-			{
-				return error_result(env, "returned 0 binary");
-			}
-
-			unsigned char *bin = enif_make_new_binary(env, param->binary->size, &cell);
+			unsigned char *bin = enif_make_new_binary(env, param->binary.size, &cell);
 			if (!bin)
 			{
 				return error_result(env, "could not allocate result binary");
 			}
 
-			memcpy(bin, param->binary->data, param->binary->size);
+			memcpy(bin, param->binary.data, param->binary.size);
 			break;
 		}
 		default:

@@ -12,7 +12,7 @@ defmodule CountZeros do
   end
 
   defnif :count_zeros_nif, [str: :binary], ret: :int do
-    "ret = 0; while(str->size--) if (*str->data++ == 0) ret++;"
+    "ret = 0; while(str.size--) if (*str.data++ == 0) ret++;"
   end
 
 end

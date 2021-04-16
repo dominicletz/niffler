@@ -6,16 +6,19 @@ defmodule NifflerTest do
   defnif :count_zeros, [str: :binary], ret: :int do
     """
     ret = 0;
-    while(str->size--) {
-      if (*str->data++ == 0) ret++;
+    while(str.size--) {
+      if (*str.data++ == 0) ret++;
     }
     """
   end
 
   test "test count zeros" do
-    assert {:ok, [2]} = count_zeros([<<0,11,0>>])
+    assert {:ok, [2]} = count_zeros([<<0, 11, 0>>])
+    assert {:ok, [1]} = count_zeros([<<0>>])
+    assert {:ok, [0]} = count_zeros([<<13>>])
+    assert {:ok, [0]} = count_zeros([<<>>])
+    assert {:error, "parameter should be binary"} = count_zeros([[]])
   end
-
 
   defnif :fib, [a: :int], ret: :int do
     """
@@ -24,7 +27,7 @@ defmodule NifflerTest do
       return fib(f-1) + fib(f-2);
     }
 
-    void run() {
+    DO_RUN {
       ret = fib(a);
     }
     """

@@ -17,7 +17,7 @@ defmodule Fib do
       return fib(f-1) + fib(f-2);
     }
 
-    void run() {
+    DO_RUN {
       ret = fib(a);
     }
     """
