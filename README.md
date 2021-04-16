@@ -4,6 +4,9 @@
 
 Niffler is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tcc/). Niffler allows converting small c fragments into nif backed functions *AT RUNTIME*
 
+*Warning:* Even though cute the Niffler is a very dangerous creature that when treated without
+enough attention can quickly cause havoc accross your whole project.
+
 # Module Example:
 
 ```

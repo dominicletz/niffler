@@ -15,7 +15,7 @@ If you want the latest features, install from GitHub:
 ```elixir
 def deps do
   [
-    {:phoenix_live_view, github: "dominicletz/niffler"}
+    {:niffler, github: "dominicletz/niffler"}
   ]
 ```
 
