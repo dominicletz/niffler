@@ -1,6 +1,6 @@
 
 defmodule CountZeros do
-  use Tinycc
+  use Niffler
 
   def count_zeros_elixir(bytes) do
     length(for <<byte::8 <- bytes>>, byte == 0, do: byte)
@@ -11,7 +11,7 @@ defmodule CountZeros do
     ret
   end
 
-  defc :count_zeros_nif, [str: :binary], ret: :int do
+  defnif :count_zeros_nif, [str: :binary], ret: :int do
     "ret = 0; while(str->size--) if (*str->data++ == 0) ret++;"
   end
 

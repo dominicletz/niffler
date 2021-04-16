@@ -1,6 +1,6 @@
 
 defmodule Noop do
-  use Tinycc
+  use Niffler
 
   def noop_elixir(bin), do: bin
 
@@ -9,7 +9,7 @@ defmodule Noop do
     ret
   end
 
-  defc :noop_nif, [a: :int], ret: :int do
+  defnif :noop_nif, [a: :int], ret: :int do
     "ret = a;"
   end
 end

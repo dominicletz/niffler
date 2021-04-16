@@ -1,14 +1,16 @@
-# Tinycc [![Build Status](https://travis-ci.com/dominicletz/tinycc.svg?branch=main)](https://travis-ci.com/dominicletz/tinycc)
+![Niffler](https://github.com/dominicletz/niffler/blob/main/img/niffler.png?raw=true)
 
-Tinycc is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tcc/). Tinycc allows converting small c fragments into nif backed functions *AT RUNTIME*
+# Niffler [![Build Status](https://travis-ci.com/dominicletz/niffler.svg?branch=main)](https://travis-ci.com/dominicletz/niffler)
+
+Niffler is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tcc/). Niffler allows converting small c fragments into nif backed functions *AT RUNTIME*
 
 # Module Example:
 
 ```
 defmodule Example do
-  use Tinycc
+  use Niffler
 
-  defc :count_zeros, [str: :binary], ret: :int do
+  defnif :count_zeros, [str: :binary], ret: :int do
     """
     ret = 0;
     while(str->size--) {
@@ -24,8 +26,8 @@ end
 # Shell Example:
 
 ```
-  iex> {:ok, prog} = Tinycc.compile("ret = a * b;", [a: :int, b: :int], [ret: :int])
-  iex> Tinycc.run(prog, [3, 4])
+  iex> {:ok, prog} = Niffler.compile("ret = a * b;", [a: :int, b: :int], [ret: :int])
+  iex> Niffler.run(prog, [3, 4])
   {:ok, [12]}
 
 ```

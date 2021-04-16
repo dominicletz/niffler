@@ -1,6 +1,6 @@
 
-{application, tinycc, [
-    {description, "tinycc"},
+{application, niffler, [
+    {description, "Niffler"},
     {vsn, git},
     {registered, []},
     {applications, [kernel, stdlib]}

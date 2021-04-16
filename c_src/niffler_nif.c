@@ -75,7 +75,7 @@ static int
 load(ErlNifEnv *env, void **priv, ERL_NIF_TERM load_info)
 {
 	int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
-	PROGRAM_TYPE = enif_open_resource_type(env, "Elixir.Tinycc", "state", free_state, flags, NULL);
+	PROGRAM_TYPE = enif_open_resource_type(env, "Elixir.Niffler", "state", free_state, flags, NULL);
 	if (PROGRAM_TYPE == 0)
 	{
 		return -1;
@@ -412,4 +412,4 @@ static ErlNifFunc nif_funcs[] = {
 
 };
 
-ERL_NIF_INIT(Elixir.Tinycc, nif_funcs, &load, NULL, &upgrade, &unload);
+ERL_NIF_INIT(Elixir.Niffler, nif_funcs, &load, NULL, &upgrade, &unload);

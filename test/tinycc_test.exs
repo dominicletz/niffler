@@ -1,9 +1,9 @@
-defmodule TinyccTest do
+defmodule NifflerTest do
   use ExUnit.Case
-  use Tinycc
-  doctest Tinycc
+  use Niffler
+  doctest Niffler
 
-  defc :count_zeros, [str: :binary], ret: :int do
+  defnif :count_zeros, [str: :binary], ret: :int do
     """
     ret = 0;
     while(str->size--) {
@@ -17,7 +17,7 @@ defmodule TinyccTest do
   end
 
 
-  defc :fib, [a: :int], ret: :int do
+  defnif :fib, [a: :int], ret: :int do
     """
     int64_t fib(int64_t f) {
       if (f < 2) return 1;

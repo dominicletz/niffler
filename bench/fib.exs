@@ -1,6 +1,6 @@
 
 defmodule Fib do
-  use Tinycc
+  use Niffler
 
   def fib_elixir(f) when f < 2, do: 1
   def fib_elixir(f), do: fib_elixir(f-1) + fib_elixir(f-2)
@@ -10,7 +10,7 @@ defmodule Fib do
     ret
   end
 
-  defc :fib_nif, [a: :int], ret: :int do
+  defnif :fib_nif, [a: :int], ret: :int do
     """
     int64_t fib(int64_t f) {
       if (f < 2) return 1;

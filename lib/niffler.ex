@@ -1,47 +1,47 @@
-defmodule Tinycc do
+defmodule Niffler do
   @on_load :init
 
   @moduledoc """
-  Documentation for `Tinycc`.
+  Documentation for `Niffler`.
   """
 
   @doc false
   defmacro __using__(_opts) do
     quote do
-      import Tinycc
-      @tinycc_module __MODULE__
+      import Niffler
+      @niffler_module __MODULE__
     end
   end
 
-  defmacro defc(name, inputs, outputs, do: source) do
+  defmacro defnif(name, inputs, outputs, do: source) do
     quote do
       def unquote(name)(args) do
-        key = {@tinycc_module, unquote(name)}
+        key = {@niffler_module, unquote(name)}
 
         :persistent_term.get(key, nil)
         |> case do
           nil ->
-            prog = Tinycc.compile!(unquote(source), unquote(inputs), unquote(outputs))
+            prog = Niffler.compile!(unquote(source), unquote(inputs), unquote(outputs))
             :persistent_term.put(key, prog)
             prog
 
           prog ->
             prog
         end
-        |> Tinycc.run(args)
+        |> Niffler.run(args)
       end
     end
   end
 
   @doc false
   def gen!(key, source, inputs, outputs) do
-    :persistent_term.put(key, Tinycc.compile!(source, inputs, outputs))
+    :persistent_term.put(key, Niffler.compile!(source, inputs, outputs))
   end
 
   @doc false
   def init do
     :ok =
-      case :code.priv_dir(:tinycc) do
+      case :code.priv_dir(:niffler) do
         {:error, :bad_name} ->
           if File.dir?(Path.join("..", "priv")) do
             Path.join("..", "priv")
@@ -52,7 +52,7 @@ defmodule Tinycc do
         path ->
           path
       end
-      |> Path.join("tinycc.nif")
+      |> Path.join("niffler.nif")
       |> String.to_charlist()
       |> :erlang.load_nif(0)
   end
@@ -62,13 +62,13 @@ defmodule Tinycc do
 
   ## Examples
 
-      iex> {:ok, prog} = Tinycc.compile("ret = a * b;", [a: :int, b: :int], [ret: :int])
-      iex> Tinycc.run(prog, [3, 4])
+      iex> {:ok, prog} = Niffler.compile("ret = a * b;", [a: :int, b: :int], [ret: :int])
+      iex> Niffler.run(prog, [3, 4])
       {:ok, [12]}
 
       iex> code = "ret = 0; for (int i = 0; i < str->size; i++) if (str->data[i] == 0) ret++;"
-      iex> {:ok, prog} = Tinycc.compile(code, [str: :binary], [ret: :int])
-      iex> Tinycc.run(prog, [<<0,1,1,0,1,5,0>>])
+      iex> {:ok, prog} = Niffler.compile(code, [str: :binary], [ret: :int])
+      iex> Niffler.run(prog, [<<0,1,1,0,1,5,0>>])
       {:ok, [3]}
 
   """
@@ -130,8 +130,8 @@ defmodule Tinycc do
 
   ## Examples
 
-      iex> {:ok, prog} = Tinycc.compile("ret = a << 2;", [a: :int], [ret: :int])
-      iex> Tinycc.run(prog, [5])
+      iex> {:ok, prog} = Niffler.compile("ret = a << 2;", [a: :int], [ret: :int])
+      iex> Niffler.run(prog, [5])
       {:ok, [20]}
 
   """
