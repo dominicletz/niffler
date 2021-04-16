@@ -30,6 +30,19 @@ niffler-*.tar
 # Crashdumps from rebar3
 *.crashdump
 
-
 # Temporary files for e.g. tests
 /tmp
+
+# Development environment
+.vscode/
+
+# Generated and other files from tinycc
+c_src/tinycc/c2str.exe
+c_src/tinycc/config.h
+c_src/tinycc/config.mak
+c_src/tinycc/config.texi
+c_src/tinycc/libtcc.a
+c_src/tinycc/tccdefs_.h
+
+# Temporary helper script
+watch.sh   
