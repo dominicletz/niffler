@@ -33,7 +33,7 @@ defmodule Niffler.MixProject do
       {:mix_rebar3, "~> 0.2"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:benchee, "~> 1.0", only: :dev},
-      {:ex_doc, "~> 0.22", only: :docs}
+      {:ex_doc, "~> 0.22", only: :dev, runtime: false}
     ]
   end
 
