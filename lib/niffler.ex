@@ -58,7 +58,8 @@ defmodule Niffler do
   end
 
   @doc """
-  Hello world.
+  Compile takes a string as input and compiles it into a nif program. Returning the program
+  reference.any()
 
   ## Examples
 
