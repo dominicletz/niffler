@@ -36,4 +36,18 @@ defmodule NifflerTest do
   test "test fib" do
     assert {:ok, [8]} = fib([5])
   end
+
+  defnif :counter, [], ret: :int do
+    """
+    static uint64_t counter = 0;
+    ret = counter++;
+    """
+  end
+
+  test "test counter" do
+    assert {:ok, [0]} = counter([])
+    assert {:ok, [1]} = counter([])
+    assert {:ok, [2]} = counter([])
+    assert {:ok, [3]} = counter([])
+  end
 end

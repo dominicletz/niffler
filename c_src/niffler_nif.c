@@ -58,7 +58,7 @@ atom_to_type(char *atom)
 
 typedef struct
 {
-	unsigned size;
+	int size;
 	ParamDef *params;
 } Params;
 
@@ -163,15 +163,23 @@ static Params
 scan_params(ErlNifEnv *env, ERL_NIF_TERM erl_params, ERL_NIF_TERM *ret)
 {
 	Params params = {};
-	if (!enif_get_list_length(env, erl_params, &params.size))
+	unsigned size;
+	if (!enif_get_list_length(env, erl_params, &size))
 	{
 		*ret = error_result(env, "parameter is not a list");
+		params.size = -1;
+		return params;
+	}
+	params.size = size;
+
+	if (params.size == 0)
+	{
 		return params;
 	}
 
-	if (!params.size)
+	if (params.size > MAX_ARGS)
 	{
-		*ret = error_result(env, "parameter list is empty");
+		*ret = error_result(env, "parameter list above maximum size");
 		return params;
 	}
 
@@ -187,7 +195,7 @@ scan_params(ErlNifEnv *env, ERL_NIF_TERM erl_params, ERL_NIF_TERM *ret)
 	if (!scan_param(env, erl_params, params.params, params.size, ret))
 	{
 		free(params.params);
-		params.size = 0;
+		params.size = -1;
 		return params;
 	}
 
@@ -207,13 +215,13 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
 	ERL_NIF_TERM ret = error_result(env, "failed to scan input parameters");
 	Params inputs = scan_params(env, argv[1], &ret);
-	if (!inputs.size)
+	if (inputs.size < 0)
 	{
 		return ret;
 	}
 	ret = error_result(env, "failed to scan output parameters");
 	Params outputs = scan_params(env, argv[2], &ret);
-	if (!outputs.size)
+	if (outputs.size < 0)
 	{
 		free(inputs.params);
 		return ret;
@@ -222,8 +230,10 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 	state = tcc_new();
 	if (!state)
 	{
-		free(outputs.params);
-		free(inputs.params);
+		if (outputs.params)
+			free(outputs.params);
+		if (inputs.params)
+			free(inputs.params);
 		return error_result(env, "could not initiate tcc state");
 	}
 
@@ -384,12 +394,6 @@ static ERL_NIF_TERM ok_result(ErlNifEnv *env, ERL_NIF_TERM ret)
 static ErlNifFunc nif_funcs[] = {
 	{"nif_compile", 3, compile},
 	{"nif_run", 2, run}
-	// {"get_string", 2, get_string},
-	// {"get_data", 3, get_data},
-	// {"get_uint64", 2, get_uint64},
-	// {"get_int64", 2, get_int64},
-	// {"get_int", 2, get_int}
-
 };
 
 ERL_NIF_INIT(Elixir.Niffler, nif_funcs, &load, NULL, &upgrade, &unload);
