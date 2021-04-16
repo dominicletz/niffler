@@ -50,4 +50,17 @@ defmodule NifflerTest do
     assert {:ok, [2]} = counter([])
     assert {:ok, [3]} = counter([])
   end
+
+  defnif :make_binary, [], ret: :binary do
+    """
+    static char lol[16];
+    for (int i = 0; i < sizeof(lol); i++) lol[i] = i;
+    ret.size = sizeof(lol);
+    ret.data = lol;
+    """
+  end
+
+  test "test binary" do
+    assert {:ok, [<<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15>>]} = make_binary([])
+  end
 end

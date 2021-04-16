@@ -57,8 +57,6 @@ count_zeros_elixir        3.54 K - 1.94x slower +137.22 μs
 This library is work in progress. Feel free to open a PR to any of these:
 
 * Test on windows
-* Integrate with CI
-* Add more tests for string/binary types
 * Compile functions on module load not on first call
 * Use async thread to avoid blocking in long-running nifs
 * Better documentation
