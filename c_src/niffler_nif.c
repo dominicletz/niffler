@@ -1,9 +1,11 @@
 /* Copyright, 2021 Dominic Letz */
 
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include "erl_nif.h"
 #include "tinycc/libtcc.h"
+#include "tcclib.h"
 
 static ERL_NIF_TERM error_result(ErlNifEnv *env, char *error_msg);
 static ERL_NIF_TERM ok_result(ErlNifEnv *env, ERL_NIF_TERM ret);
@@ -255,8 +257,10 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		return error_result(env, "compilation error");
 	}
 
-	// TODO: add some library functions
-	// tcc_add_symbol(state, name, &ptr);
+	#define X(name) tcc_add_symbol(state, #name, name);
+	#include "symbols.def"
+	#undef X
+
 	tcc_set_options(state, "-nostdlib");
 	if (tcc_relocate(state, TCC_RELOCATE_AUTO) != 0)
 	{
@@ -393,7 +397,6 @@ static ERL_NIF_TERM ok_result(ErlNifEnv *env, ERL_NIF_TERM ret)
 
 static ErlNifFunc nif_funcs[] = {
 	{"nif_compile", 3, compile},
-	{"nif_run", 2, run}
-};
+	{"nif_run", 2, run}};
 
 ERL_NIF_INIT(Elixir.Niffler, nif_funcs, &load, NULL, &upgrade, &unload);

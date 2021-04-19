@@ -91,14 +91,10 @@ defmodule Niffler do
 
     run =
       if String.contains?(code, "DO_RUN {") do
-        String.replace(code, "DO_RUN {", """
-          void run(Param *input, Param *output) {
-            #{type_defs}
-        """)
+        code
       else
         """
-        void run(Param *input, Param *output) {
-          #{type_defs}
+        DO_RUN {
           #{code}
         }
         """
@@ -106,6 +102,8 @@ defmodule Niffler do
 
     code = """
       #{header()}
+      #{type_defs}
+      #define DO_RUN void run(Param *input, Param *output)
 
       #{run}
     """
@@ -118,6 +116,7 @@ defmodule Niffler do
               String.split(code, "\n")
               |> Enum.with_index(1)
               |> Enum.map(fn {line, num} -> String.pad_leading("#{num}: ", 4) <> line end)
+              |> Enum.drop(110)
               |> Enum.join("\n")
 
             IO.puts(lines)
@@ -193,6 +192,8 @@ defmodule Niffler do
         uint64_t uinteger64;
         double doubleval;
       } Param;
+
+      #{Niffler.Stdlib.include()}
     """
     |> String.trim()
   end
