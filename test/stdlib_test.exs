@@ -23,7 +23,7 @@ defmodule StdlibTest do
   end
 
   test "test sprintf" do
-    assert {:ok, ["28"]} = sprintf([])
+    assert {:ok, ["28"]} = sprintf()
   end
 
   defnif :gmp_mul, [a: :int, b: :int], ret: :int, err: :binary do
@@ -102,6 +102,6 @@ defmodule StdlibTest do
   end
 
   test "gmp multiplication" do
-    assert {:ok, ["", 12]} = gmp_mul([3, 4])
+    assert {:ok, ["", 12]} = gmp_mul(3, 4)
   end
 end

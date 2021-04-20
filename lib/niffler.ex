@@ -14,8 +14,10 @@ defmodule Niffler do
   end
 
   defmacro defnif(name, inputs, outputs, do: source) do
+    keys = Keyword.keys(inputs) |> Enum.map(fn n -> Macro.var(n, __MODULE__) end)
+
     quote do
-      def unquote(name)(args) do
+      def unquote(name)(unquote_splicing(keys)) do
         key = {@niffler_module, unquote(name)}
 
         :persistent_term.get(key, nil)
@@ -28,7 +30,7 @@ defmodule Niffler do
           prog ->
             prog
         end
-        |> Niffler.run(args)
+        |> Niffler.run([unquote_splicing(keys)])
       end
     end
   end

@@ -21,7 +21,7 @@ defmodule ConcurrencyTest do
     spawn_workers(workers, fn ->
       for _ <- 1..rounds do
         for {data, answer} <- tests do
-          ^answer = count_zeros([data])
+          ^answer = count_zeros(data)
         end
       end
     end)
@@ -29,7 +29,7 @@ defmodule ConcurrencyTest do
 
   defp testdata(size) do
     data = :crypto.strong_rand_bytes(size)
-    answer = count_zeros([data])
+    answer = count_zeros(data)
     {data, answer}
   end
 
