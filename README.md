@@ -7,6 +7,12 @@ Niffler is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tc
 *Warning:* Even though cute the Niffler is a very dangerous creature that when treated without
 enough attention can quickly cause havoc accross your whole project.
 
+# Use Cases
+
+* Make things faster (any binary/math code is ~3x faster with the niffler)
+* Access dynamic libraries at runtime
+* Create havoc in memory
+
 # Module Example:
 
 ```
@@ -23,16 +29,7 @@ defmodule Example do
   end
 end
 
-{:ok, [2]} = Example.count_zeros([<<0,11,0>>])
-```
-
-# Shell Example:
-
-```
-  iex> {:ok, prog} = Niffler.compile("ret = a * b;", [a: :int, b: :int], [ret: :int])
-  iex> Niffler.run(prog, [3, 4])
-  {:ok, [12]}
-
+{:ok, [2]} = Example.count_zeros(<<0,11,0>>)
 ```
 
 # Benchmarks
