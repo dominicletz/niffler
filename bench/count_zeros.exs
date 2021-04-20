@@ -7,7 +7,7 @@ defmodule CountZeros do
   end
 
   def count_zeros_nif!(bin) do
-    {:ok, [ret]} = count_zeros_nif([bin])
+    {:ok, [ret]} = count_zeros_nif(bin)
     ret
   end
 

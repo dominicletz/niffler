@@ -92,20 +92,22 @@ defmodule Niffler do
       |> Enum.join("\n  ")
 
     run =
-      if String.contains?(code, "DO_RUN {") do
+      if String.contains?(code, "DO_RUN") do
         code
       else
         """
-        DO_RUN {
+        DO_RUN
           #{code}
-        }
+          return 0;
+        END_RUN
         """
       end
 
     code = """
       #{header()}
       #{type_defs}
-      #define DO_RUN void run(Param *input, Param *output)
+      #define DO_RUN const char *run(Param *input, Param *output) {
+      #define END_RUN return 0; }
 
       #{run}
     """

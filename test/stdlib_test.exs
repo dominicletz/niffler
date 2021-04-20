@@ -26,7 +26,7 @@ defmodule StdlibTest do
     assert {:ok, ["28"]} = sprintf()
   end
 
-  defnif :gmp_mul, [a: :int, b: :int], ret: :int, err: :binary do
+  defnif :gmp_mul, [a: :int, b: :int], ret: :int do
     """
     typedef struct
     {
@@ -36,9 +36,6 @@ defmodule StdlibTest do
     } __mpz_struct;
 
     typedef __mpz_struct mpz_t[1];
-    char error[128];
-
-
     void (*mpz_init)(mpz_t);
     void (*mpz_mul)(mpz_t, mpz_t, mpz_t);
     void (*mpz_set_si)(mpz_t, signed long int);
@@ -49,42 +46,29 @@ defmodule StdlibTest do
     mpz_t mc;
     void *gmp;
 
-    DO_RUN {
+    DO_RUN
       static int initialized = 0;
       if (!initialized) {
         gmp = dlopen("libgmp.so", RTLD_LAZY);
         if (!gmp) {
-          ret = -1;
-          return;
+          return "could not load libgmp";
         }
 
         dlerror();
-        mpz_init   = dlsym(gmp, "__gmpz_init");
-        if (!mpz_init) {
-          err.data = error;
-          err.size = sprintf(error, dlerror());
-          return;
+        if (!(mpz_init = dlsym(gmp, "__gmpz_init"))) {
+          return dlerror();
         }
         dlerror();
-        mpz_mul    = dlsym(gmp, "__gmpz_mul");
-        if (!mpz_mul) {
-          err.data = error;
-          err.size = sprintf(error, dlerror());
-          return;
+        if (!(mpz_mul = dlsym(gmp, "__gmpz_mul"))) {
+          return dlerror();
         }
         dlerror();
-        mpz_set_si = dlsym(gmp, "__gmpz_set_si");
-        if (!mpz_set_si) {
-          err.data = error;
-          err.size = sprintf(error, dlerror());
-          return;
+        if (!(mpz_set_si = dlsym(gmp, "__gmpz_set_si"))) {
+          return dlerror();
         }
         dlerror();
-        mpz_get_si = dlsym(gmp, "__gmpz_get_si");
-        if (!mpz_get_si) {
-          err.data = error;
-          err.size = sprintf(error, dlerror());
-          return;
+        if (!(mpz_get_si = dlsym(gmp, "__gmpz_get_si"))) {
+          return dlerror();
         }
 
         mpz_init(ma);
@@ -97,11 +81,11 @@ defmodule StdlibTest do
       mpz_set_si(mb, b);
       mpz_mul(mc, ma, mb);
       ret = mpz_get_si(mc);
-    }
+    END_RUN
     """
   end
 
   test "gmp multiplication" do
-    assert {:ok, ["", 12]} = gmp_mul(3, 4)
+    assert {:ok, [12]} = gmp_mul(3, 4)
   end
 end

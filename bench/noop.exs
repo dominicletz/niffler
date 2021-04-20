@@ -5,7 +5,7 @@ defmodule Noop do
   def noop_elixir(bin), do: bin
 
   def noop_nif!(bin) do
-    {:ok, [ret]} = noop_nif([bin])
+    {:ok, [ret]} = noop_nif(bin)
     ret
   end
 

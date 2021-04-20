@@ -6,7 +6,7 @@ defmodule Fib do
   def fib_elixir(f), do: fib_elixir(f-1) + fib_elixir(f-2)
 
   def fib_nif!(bin) do
-    {:ok, [ret]} = fib_nif([bin])
+    {:ok, [ret]} = fib_nif(bin)
     ret
   end
 
@@ -17,9 +17,9 @@ defmodule Fib do
       return fib(f-1) + fib(f-2);
     }
 
-    DO_RUN {
+    DO_RUN
       ret = fib(a);
-    }
+    END_RUN
     """
   end
 

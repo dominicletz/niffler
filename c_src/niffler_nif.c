@@ -7,7 +7,7 @@
 #include "tinycc/libtcc.h"
 #include "tcclib.h"
 
-static ERL_NIF_TERM error_result(ErlNifEnv *env, char *error_msg);
+static ERL_NIF_TERM error_result(ErlNifEnv *env, const char *error_msg);
 static ERL_NIF_TERM ok_result(ErlNifEnv *env, ERL_NIF_TERM ret);
 static void free_state(ErlNifEnv *env, void *obj);
 
@@ -67,7 +67,7 @@ typedef struct
 typedef struct
 {
 	TCCState *state;
-	void (*runop)(Param *, Param *);
+	const char* (*runop)(Param *, Param *);
 	Params inputs;
 	Params outputs;
 } Program;
@@ -342,7 +342,10 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		}
 	}
 
-	program->runop(input, output);
+	const char* error = program->runop(input, output);
+	if (error) {
+		return error_result(env, error);
+	}
 
 	ERL_NIF_TERM ret = enif_make_list(env, 0);
 	for (int i = 0; i < program->outputs.size; i++)
@@ -382,7 +385,7 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 	return ok_result(env, ret);
 }
 
-static ERL_NIF_TERM error_result(ErlNifEnv *env, char *error_msg)
+static ERL_NIF_TERM error_result(ErlNifEnv *env, const char *error_msg)
 {
 	ERL_NIF_TERM bin;
 	unsigned char *dst = enif_make_new_binary(env, strlen(error_msg), &bin);

@@ -27,9 +27,9 @@ defmodule NifflerTest do
       return fib(f-1) + fib(f-2);
     }
 
-    DO_RUN {
+    DO_RUN
       ret = fib(a);
-    }
+    END_RUN
     """
   end
 
