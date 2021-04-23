@@ -33,6 +33,44 @@ typedef union
 	double doubleval;
 } Param;
 
+typedef struct _Item
+{
+	struct _Item *prev;
+	struct _Item *next;
+	char begin;
+} AllocItem;
+
+typedef struct
+{
+	uint64_t method;
+	AllocItem *head;
+} Env;
+
+void *alloc_env(Env *env, size_t size)
+{
+	AllocItem *item = malloc(size + sizeof(AllocItem));
+	if (!item)
+		return 0;
+
+	memset(item, 0, size + sizeof(AllocItem));
+	item->next = env->head;
+	env->head = item;
+	return &item->begin;
+}
+
+void free_env(Env *env)
+{
+	while (env->head)
+	{
+		AllocItem *head = env->head;
+		if (head)
+		{
+			env->head = head->next;
+			free(head);
+		}
+	}
+}
+
 #define TYPE_INT64 1
 #define TYPE_UINT64 2
 // #define TYPE_STRING 4
@@ -67,9 +105,29 @@ typedef struct
 typedef struct
 {
 	TCCState *state;
-	const char* (*runop)(Param *, Param *);
 	Params inputs;
 	Params outputs;
+} Method;
+
+static void free_methods(Method *methods, unsigned size)
+{
+	if (!methods)
+		return;
+	for (unsigned i = 0; i < size; i++)
+	{
+		if (methods[i].inputs.params)
+			free(methods[i].inputs.params);
+		if (methods[i].outputs.params)
+			free(methods[i].outputs.params);
+	}
+}
+
+typedef struct
+{
+	TCCState *state;
+	const char *(*runop)(Env *, Param *, Param *);
+	Method *methods;
+	unsigned method_count;
 } Program;
 
 static int
@@ -78,9 +136,7 @@ load(ErlNifEnv *env, void **priv, ERL_NIF_TERM load_info)
 	int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
 	PROGRAM_TYPE = enif_open_resource_type(env, "Elixir.Niffler", "state", free_state, flags, NULL);
 	if (PROGRAM_TYPE == 0)
-	{
 		return -1;
-	}
 	return 0;
 }
 
@@ -100,9 +156,7 @@ static int
 scan_param(ErlNifEnv *env, ERL_NIF_TERM erlp, ParamDef *p, unsigned size, ERL_NIF_TERM *ret)
 {
 	if (!size)
-	{
 		return 1;
-	}
 
 	ERL_NIF_TERM head, tail;
 	if (!enif_get_list_cell(env, erlp, &head, &tail))
@@ -175,9 +229,7 @@ scan_params(ErlNifEnv *env, ERL_NIF_TERM erl_params, ERL_NIF_TERM *ret)
 	params.size = size;
 
 	if (params.size == 0)
-	{
 		return params;
-	}
 
 	if (params.size > MAX_ARGS)
 	{
@@ -186,13 +238,14 @@ scan_params(ErlNifEnv *env, ERL_NIF_TERM erl_params, ERL_NIF_TERM *ret)
 	}
 
 	params.params = malloc(sizeof(params.params[0]) * params.size);
-	memset(params.params, 0, sizeof(params.params[0]) * params.size);
 
 	if (!params.params)
 	{
 		*ret = error_result(env, "could not allocate parameter list");
 		return params;
 	}
+
+	memset(params.params, 0, sizeof(params.params[0]) * params.size);
 
 	if (!scan_param(env, erl_params, params.params, params.size, ret))
 	{
@@ -211,67 +264,82 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 	TCCState *state;
 
 	if (!enif_inspect_binary(env, argv[0], &sourcecode))
-	{
 		return enif_make_badarg(env);
-	}
 
-	ERL_NIF_TERM ret = error_result(env, "failed to scan input parameters");
-	Params inputs = scan_params(env, argv[1], &ret);
-	if (inputs.size < 0)
+	unsigned size;
+	ERL_NIF_TERM method_list = argv[1];
+	if (!enif_get_list_length(env, method_list, &size))
+		return error_result(env, "parameter is not a list");
+
+	if (size == 0)
+		return error_result(env, "parameter list is empty");
+
+	Method *methods = malloc(sizeof(Method) * size);
+	if (!methods)
+		return error_result(env, "could not allocate method list");
+
+	memset(methods, 0, sizeof(Method) * size);
+
+	for (unsigned i = 0; i < size; i++)
 	{
-		return ret;
-	}
-	ret = error_result(env, "failed to scan output parameters");
-	Params outputs = scan_params(env, argv[2], &ret);
-	if (outputs.size < 0)
-	{
-		free(inputs.params);
-		return ret;
+		ERL_NIF_TERM head;
+		if (!enif_get_list_cell(env, method_list, &head, &method_list)) 
+			return error_result(env, "could get method list element");
+
+		int arity;
+		const ERL_NIF_TERM* tuple;
+		if (!enif_get_tuple(env, head, &arity, &tuple) || arity != 2) 
+			return error_result(env, "method list element is not a 2-element tuple");
+
+
+		ERL_NIF_TERM ret = error_result(env, "failed to scan input parameters");
+		methods[i].inputs = scan_params(env, tuple[0], &ret);
+		if (methods[i].inputs.size < 0)
+		{
+			free_methods(methods, size);
+			return ret;
+		}
+		ret = error_result(env, "failed to scan output parameters");
+		methods[i].outputs = scan_params(env, tuple[1], &ret);
+		if (methods[i].outputs.size < 0)
+		{
+			free_methods(methods, size);
+			return ret;
+		}
 	}
 
 	state = tcc_new();
 	if (!state)
 	{
-		if (outputs.params)
-			free(outputs.params);
-		if (inputs.params)
-			free(inputs.params);
+		free_methods(methods, size);
 		return error_result(env, "could not initiate tcc state");
 	}
 
 	Program *program = enif_alloc_resource(PROGRAM_TYPE, sizeof(Program));
 	program->state = state;
-	program->inputs = inputs;
-	program->outputs = outputs;
+	program->methods = methods;
+	program->method_count = size;
 
 	ERL_NIF_TERM term = enif_make_resource(env, program);
 	enif_release_resource(program);
 
 	if (tcc_set_output_type(state, TCC_OUTPUT_MEMORY) != 0)
-	{
 		return error_result(env, "could not set tcc output type");
-	}
 
 	if (tcc_compile_string(state, (const char *)sourcecode.data) != 0)
-	{
 		return error_result(env, "compilation error");
-	}
 
-	#define X(name) tcc_add_symbol(state, #name, name);
-	#include "symbols.def"
-	#undef X
+#define X(name) tcc_add_symbol(state, #name, name);
+#include "symbols.def"
+#undef X
 
 	tcc_set_options(state, "-nostdlib");
 	if (tcc_relocate(state, TCC_RELOCATE_AUTO) != 0)
-	{
 		return error_result(env, "could not relocate program");
-	}
 
 	program->runop = tcc_get_symbol(program->state, "run");
 	if (!program->runop)
-	{
-		return error_result(env, "void run() is undefined");
-	}
+		return error_result(env, " run is undefined");
 
 	return ok_result(env, term);
 }
@@ -280,8 +348,7 @@ static void free_state(ErlNifEnv *env, void *obj)
 {
 	Program *program = (Program *)obj;
 	tcc_delete(program->state);
-	free(program->inputs.params);
-	free(program->outputs.params);
+	free_methods(program->methods, program->method_count);
 }
 
 static ERL_NIF_TERM
@@ -290,49 +357,49 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 	Program *program;
 
 	if (!enif_get_resource(env, argv[0], PROGRAM_TYPE, (void *)&program))
-	{
 		return enif_make_badarg(env);
-	}
 
-	Param input[MAX_ARGS] = {};
-	Param output[MAX_ARGS] = {};
+	uint64_t method_index;
+	if (!enif_get_uint64(env, argv[1], &method_index))
+		return error_result(env, "method index must be an int");
 
-	ERL_NIF_TERM head, tail = argv[1];
-	for (int i = 0; i < program->inputs.size; i++)
+	if (method_index >= program->method_count)
+		return error_result(env, "method index out of bounds");
+
+	Method *method = &program->methods[method_index];
+
+	Param *input = alloca(sizeof(Param) * method->inputs.size);
+	Param *output = alloca(sizeof(Param) * method->outputs.size);
+	memset(output, 0, sizeof(Param) * method->outputs.size);
+	// Param input[MAX_ARGS] = {};
+	// Param output[MAX_ARGS] = {};
+
+	ERL_NIF_TERM head, tail = argv[2];
+	for (int i = 0; i < method->inputs.size; i++)
 	{
 		if (!enif_get_list_cell(env, tail, &head, &tail))
-		{
 			return error_result(env, "not enough arguments");
-		}
 
-		switch (program->inputs.params[i].type)
+		switch (method->inputs.params[i].type)
 		{
 		case TYPE_INT64:
 			if (!enif_get_int64(env, head, &input[i].integer64))
-			{
 				return error_result(env, "parameter should be int64");
-			}
 			break;
 		case TYPE_UINT64:
 			if (!enif_get_uint64(env, head, &input[i].uinteger64))
-			{
 				return error_result(env, "parameter should be uint64");
-			}
 			break;
 		case TYPE_DOUBLE:
 			if (!enif_get_double(env, head, &input[i].doubleval))
-			{
 				return error_result(env, "parameter should be double");
-			}
 			break;
 		// case TYPE_STRING:
 		case TYPE_BINARY:
 		{
 			ErlNifBinary erlbin;
 			if (!enif_inspect_binary(env, head, &erlbin))
-			{
 				return error_result(env, "parameter should be binary");
-			}
 			input[i].binary.size = erlbin.size;
 			input[i].binary.data = erlbin.data;
 			break;
@@ -342,18 +409,23 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		}
 	}
 
-	const char* error = program->runop(input, output);
-	if (error) {
+	Env user_env;
+	user_env.method = method_index;
+	user_env.head = 0;
+	const char *error = program->runop(&user_env, input, output);
+	if (error)
+	{
+		free_env(&user_env);
 		return error_result(env, error);
 	}
 
 	ERL_NIF_TERM ret = enif_make_list(env, 0);
-	for (int i = 0; i < program->outputs.size; i++)
+	for (int i = 0; i < method->outputs.size; i++)
 	{
 		ERL_NIF_TERM cell;
 		Param *param = output + i;
 
-		switch (program->outputs.params[i].type)
+		switch (method->outputs.params[i].type)
 		{
 		case TYPE_INT64:
 			cell = enif_make_int64(env, param->integer64);
@@ -370,6 +442,7 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 			unsigned char *bin = enif_make_new_binary(env, param->binary.size, &cell);
 			if (!bin)
 			{
+				free_env(&user_env);
 				return error_result(env, "could not allocate result binary");
 			}
 
@@ -377,11 +450,13 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 			break;
 		}
 		default:
+			free_env(&user_env);
 			return error_result(env, "internal type error");
 		}
 		ret = enif_make_list_cell(env, cell, ret);
 	}
 
+	free_env(&user_env);
 	return ok_result(env, ret);
 }
 
@@ -399,7 +474,7 @@ static ERL_NIF_TERM ok_result(ErlNifEnv *env, ERL_NIF_TERM ret)
 }
 
 static ErlNifFunc nif_funcs[] = {
-	{"nif_compile", 3, compile},
-	{"nif_run", 2, run}};
+	{"nif_compile", 2, compile},
+	{"nif_run", 3, run}};
 
 ERL_NIF_INIT(Elixir.Niffler, nif_funcs, &load, NULL, &upgrade, &unload);

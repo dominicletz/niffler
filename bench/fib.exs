@@ -18,7 +18,7 @@ defmodule Fib do
     }
 
     DO_RUN
-      ret = fib(a);
+      $ret = fib($a);
     END_RUN
     """
   end

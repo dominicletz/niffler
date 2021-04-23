@@ -10,7 +10,7 @@ defmodule Noop do
   end
 
   defnif :noop_nif, [a: :int], ret: :int do
-    "ret = a;"
+    "$ret = $a;"
   end
 end
 

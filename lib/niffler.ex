@@ -65,11 +65,11 @@ defmodule Niffler do
 
   ## Examples
 
-      iex> {:ok, prog} = Niffler.compile("ret = a * b;", [a: :int, b: :int], [ret: :int])
+      iex> {:ok, prog} = Niffler.compile("$ret = $a * $b;", [a: :int, b: :int], [ret: :int])
       iex> Niffler.run(prog, [3, 4])
       {:ok, [12]}
 
-      iex> code = "ret = 0; for (int i = 0; i < str.size; i++) if (str.data[i] == 0) ret++;"
+      iex> code = "for (int i = 0; i < $str.size; i++) if ($str.data[i] == 0) $ret++;"
       iex> {:ok, prog} = Niffler.compile(code, [str: :binary], [ret: :int])
       iex> Niffler.run(prog, [<<0,1,1,0,1,5,0>>])
       {:ok, [3]}
@@ -77,42 +77,43 @@ defmodule Niffler do
   """
   def compile(code, inputs, outputs)
       when is_binary(code) and is_list(inputs) and is_list(outputs) do
-    type_defs =
-      [
-        Enum.with_index(inputs)
-        |> Enum.map(fn {{name, type}, idx} ->
-          "#define #{name} (input[#{idx}].#{value_name(type)})"
-        end),
-        Enum.with_index(outputs)
-        |> Enum.map(fn {{name, type}, idx} ->
-          "#define #{name} (output[#{idx}].#{value_name(type)})"
-        end)
-      ]
-      |> Enum.concat()
-      |> Enum.join("\n  ")
-
-    run =
+    code =
       if String.contains?(code, "DO_RUN") do
-        code
+        """
+        #{type_defs(inputs, outputs)}
+        #{code}
+        #{type_undefs(inputs, outputs)}
+        """
       else
         """
         DO_RUN
+          #{type_defs(inputs, outputs)}
           #{code}
-          return 0;
+          #{type_undefs(inputs, outputs)}
         END_RUN
         """
       end
 
-    code = """
-      #{header()}
-      #{type_defs}
-      #define DO_RUN const char *run(Param *input, Param *output) {
-      #define END_RUN return 0; }
+    compile(code, [{inputs, outputs}])
+  end
 
-      #{run}
-    """
+  def compile!(code, inputs, outputs) do
+    {:ok, prog} = compile(code, inputs, outputs)
+    prog
+  end
 
-    case nif_compile(code <> <<0>>, inputs, outputs) do
+  def compile(code, params) do
+    code =
+      """
+        #{header()}
+
+        #define DO_RUN #{method_name("run")} {
+        #define END_RUN return 0; }
+
+        #{code}
+      """ <> <<0>>
+
+    case nif_compile(code, params) do
       {:error, message} ->
         message =
           if message == "compilation error" do
@@ -120,7 +121,7 @@ defmodule Niffler do
               String.split(code, "\n")
               |> Enum.with_index(1)
               |> Enum.map(fn {line, num} -> String.pad_leading("#{num}: ", 4) <> line end)
-              |> Enum.drop(110)
+              # |> Enum.drop(110)
               |> Enum.join("\n")
 
             IO.puts(lines)
@@ -136,12 +137,12 @@ defmodule Niffler do
     end
   end
 
-  def compile!(code, inputs, outputs) do
-    {:ok, prog} = compile(code, inputs, outputs)
+  def compile!(code, params) do
+    {:ok, prog} = compile(code, params)
     prog
   end
 
-  defp nif_compile(_code, _inputs, _outputs) do
+  defp nif_compile(_code, _params) do
     :erlang.nif_error(:nif_library_not_loaded)
   end
 
@@ -150,21 +151,21 @@ defmodule Niffler do
 
   ## Examples
 
-      iex> {:ok, prog} = Niffler.compile("ret = a << 2;", [a: :int], [ret: :int])
+      iex> {:ok, prog} = Niffler.compile("$ret = $a << 2;", [a: :int], [ret: :int])
       iex> Niffler.run(prog, [5])
       {:ok, [20]}
 
   """
-  def run(prog, args) do
-    nif_run(prog, args)
+  def run(prog, method \\ 0, args) do
+    nif_run(prog, method, args)
   end
 
-  def run!(prog, args) do
-    {:ok, ret} = run(prog, args)
+  def run!(prog, method \\ 0, args) do
+    {:ok, ret} = run(prog, method, args)
     ret
   end
 
-  defp nif_run(_state, _args) do
+  defp nif_run(_state, _method, _args) do
     :erlang.nif_error(:nif_library_not_loaded)
   end
 
@@ -185,6 +186,12 @@ defmodule Niffler do
       typedef long long           int64_t;
       typedef unsigned long long  uint64_t;
 
+      typedef struct
+      {
+        uint64_t method;
+        void *head;
+      } Env;
+
       typedef struct {
         uint64_t size;
         unsigned char* data;
@@ -200,5 +207,28 @@ defmodule Niffler do
       #{Niffler.Stdlib.include()}
     """
     |> String.trim()
+  end
+
+  def type_defs(inputs, outputs) do
+    [
+      Enum.with_index(inputs)
+      |> Enum.map(fn {{name, type}, idx} ->
+        "#define $#{name} (niffler_input[#{idx}].#{value_name(type)})"
+      end),
+      Enum.with_index(outputs)
+      |> Enum.map(fn {{name, type}, idx} ->
+        "#define $#{name} (niffler_output[#{idx}].#{value_name(type)})"
+      end)
+    ]
+    |> Enum.concat()
+    |> Enum.join("\n  ")
+  end
+
+  def type_undefs(inputs, outputs) do
+    (inputs ++ outputs) |> Enum.map(fn {name, _} -> "#undef $#{name}" end) |> Enum.join("\n  ")
+  end
+
+  def method_name(name) do
+    "const char *#{name}(Env *niffler_env, Param *niffler_input, Param *niffler_output)"
   end
 end

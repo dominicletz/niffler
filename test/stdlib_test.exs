@@ -17,8 +17,8 @@ defmodule StdlibTest do
   defnif :sprintf, [], ret: :binary do
     """
     static char lol[16];
-    ret.data = lol;
-    ret.size = snprintf(lol, sizeof(lol), "%d", 28);
+    $ret.data = lol;
+    $ret.size = snprintf(lol, sizeof(lol), "%d", 28);
     """
   end
 
@@ -77,10 +77,10 @@ defmodule StdlibTest do
         initialized = 1;
       }
 
-      mpz_set_si(ma, a);
-      mpz_set_si(mb, b);
+      mpz_set_si(ma, $a);
+      mpz_set_si(mb, $b);
       mpz_mul(mc, ma, mb);
-      ret = mpz_get_si(mc);
+      $ret = mpz_get_si(mc);
     END_RUN
     """
   end

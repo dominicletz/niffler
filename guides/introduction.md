@@ -27,9 +27,8 @@ defmodule Example do
 
   defnif :count_zeros, [str: :binary], ret: :int do
     """
-    ret = 0;
-    while(str.size--) {
-      if (*str.data++ == 0) ret++;
+    while($str.size--) {
+      if (*$str.data++ == 0) $ret++;
     }
     """
   end
@@ -67,8 +66,8 @@ possible from the tests here:
     """
     static char str[16];
     for (int i = 0; i < sizeof(str); i++) str[i] = i;
-    ret.size = sizeof(str);
-    ret.data = str;
+    $ret.size = sizeof(str);
+    $ret.data = str;
     """
   end
 
@@ -89,7 +88,7 @@ Let's take for example this stateful counter:
   defnif :counter, [], ret: :int do
     """
     static uint64_t counter = 0;
-    ret = counter++;
+    $ret = counter++;
     """
   end
 ```

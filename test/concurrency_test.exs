@@ -5,9 +5,8 @@ defmodule ConcurrencyTest do
 
   defnif :count_zeros, [str: :binary], ret: :int do
     """
-    ret = 0;
-    while(str.size--) {
-      if (*str.data++ == 0) ret++;
+    while($str.size--) {
+      if (*$str.data++ == 0) $ret++;
     }
     """
   end

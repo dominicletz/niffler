@@ -5,9 +5,8 @@ defmodule NifflerTest do
 
   defnif :count_zeros, [str: :binary], ret: :int do
     """
-    ret = 0;
-    while(str.size--) {
-      if (*str.data++ == 0) ret++;
+    while($str.size--) {
+      if (*$str.data++ == 0) $ret++;
     }
     """
   end
@@ -28,7 +27,7 @@ defmodule NifflerTest do
     }
 
     DO_RUN
-      ret = fib(a);
+      $ret = fib($a);
     END_RUN
     """
   end
@@ -40,7 +39,7 @@ defmodule NifflerTest do
   defnif :counter, [], ret: :int do
     """
     static uint64_t counter = 0;
-    ret = counter++;
+    $ret = counter++;
     """
   end
 
@@ -55,8 +54,8 @@ defmodule NifflerTest do
     """
     static char lol[16];
     for (int i = 0; i < sizeof(lol); i++) lol[i] = i;
-    ret.size = sizeof(lol);
-    ret.data = lol;
+    $ret.size = sizeof(lol);
+    $ret.data = lol;
     """
   end
 
