@@ -3,16 +3,18 @@ defmodule StdlibTest do
   use Niffler
   doctest Niffler
 
-  # defnif :reverse, [input: :binary], ret: :binary do
-  #   """
-  #   ret.data = alloca(input.size);
-  #   for (int i = 0; i < input.size; i++) ret.data[i] = input.data[input.size-i];
-  #   """
-  # end
+  defnif :reverse, [input: :binary], ret: :binary do
+    """
+    $ret.data = $alloc($input.size);
+    $ret.size = $input.size;
+    for (int i = 0; i < $input.size; i++)
+      $ret.data[i] = $input.data[$input.size-(i+1)];
+    """
+  end
 
-  # test "test reverse" do
-  #   assert {:ok, [<<1, 2, 3>>]} = reverse([<<3, 2, 1>>])
-  # end
+  test "test reverse" do
+    assert {:ok, [<<1, 2, 3>>]} = reverse(<<3, 2, 1>>)
+  end
 
   defnif :sprintf, [], ret: :binary do
     """

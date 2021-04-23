@@ -106,10 +106,6 @@ defmodule Niffler do
     code =
       """
         #{header()}
-
-        #define DO_RUN #{method_name("run")} {
-        #define END_RUN return 0; }
-
         #{code}
       """ <> <<0>>
 
@@ -121,7 +117,7 @@ defmodule Niffler do
               String.split(code, "\n")
               |> Enum.with_index(1)
               |> Enum.map(fn {line, num} -> String.pad_leading("#{num}: ", 4) <> line end)
-              # |> Enum.drop(110)
+              |> Enum.drop(length(String.split(header(), "\n")))
               |> Enum.join("\n")
 
             IO.puts(lines)
@@ -203,6 +199,9 @@ defmodule Niffler do
         uint64_t uinteger64;
         double doubleval;
       } Param;
+
+      #define DO_RUN #{method_name("run")} {
+      #define END_RUN return 0; }
 
       #{Niffler.Stdlib.include()}
     """

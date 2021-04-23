@@ -46,7 +46,7 @@ typedef struct
 	AllocItem *head;
 } Env;
 
-void *alloc_env(Env *env, size_t size)
+void *niffler_alloc(Env *env, size_t size)
 {
 	AllocItem *item = malloc(size + sizeof(AllocItem));
 	if (!item)
@@ -329,9 +329,9 @@ compile(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 	if (tcc_compile_string(state, (const char *)sourcecode.data) != 0)
 		return error_result(env, "compilation error");
 
-#define X(name) tcc_add_symbol(state, #name, name);
-#include "symbols.def"
-#undef X
+	#define X(name) tcc_add_symbol(state, #name, name);
+	#include "symbols.def"
+	#undef X
 
 	tcc_set_options(state, "-nostdlib");
 	if (tcc_relocate(state, TCC_RELOCATE_AUTO) != 0)

@@ -90,6 +90,12 @@ defmodule Niffler.Stdlib do
     void *dlsym(void *handle, char *symbol);
     int dlclose(void *handle);
 
+    /* Niffler extensions */
+
+    void *niffler_alloc(Env *, size_t);
+    #define $alloc(size) niffler_alloc(niffler_env, (size))
+
+
     #endif /* _TCCLIB_H */
     """
   end
