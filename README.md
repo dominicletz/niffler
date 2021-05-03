@@ -2,16 +2,15 @@
 
 # Niffler [![Build Status](https://travis-ci.com/dominicletz/niffler.svg?branch=main)](https://travis-ci.com/dominicletz/niffler)
 
-Niffler is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tcc/). Niffler allows converting small c fragments into nif backed functions *AT RUNTIME*
+Niffler is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tcc/). Niffler allows converting small c fragments into nif backed functions *AT RUNTIME*.
 
-*Warning:* Even though cute the Niffler is a very dangerous creature that when treated without
-enough attention can quickly cause havoc accross your whole project.
+*Warning:* Even though cute, the Niffler is very dangerous creature that when treated without enough attention can quickly cause havoc accross your whole BEAM.
 
 # Use Cases
 
-* Make things faster (any binary/math code is ~3x faster with the niffler)
-* Access dynamic libraries at runtime
-* Create havoc in memory
+* Call your .dll / .so / .dylib dynamic library code from Elixir.
+* Make things faster (most binary/math code is ~3x faster with the niffler)
+* Create chaos in memory (seriously be careful with c-fragments)
 
 # Module Example:
 
@@ -50,7 +49,7 @@ count_zeros_elixir        3.54 K - 1.94x slower +137.22 μs
 
 # Windows
 
-I've only tried compiling & running this under windows with the msys2 toolchain. For that you need to install dlfcn and export the rebar variables:
+I've only tried compiling & running this under windows with the [msys2](https://www.msys2.org/) toolchain. For that you need to install dlfcn and export the rebar variables:
 
 ```
 msys2-64 $> pacman -S mingw-w64-x86_64-dlfcn
