@@ -59,13 +59,11 @@ defmodule Niffler.Stdlib do
     int sprintf(char *str, const char *format, ...);
     int snprintf(char *str, size_t size, const  char  *format, ...);
     int asprintf(char **strp, const char *format, ...);
-    int dprintf(int fd, const char *format, ...);
     int vprintf(const char *format, va_list ap);
     int vfprintf(FILE  *stream,  const  char *format, va_list ap);
     int vsprintf(char *str, const char *format, va_list ap);
     int vsnprintf(char *str, size_t size, const char  *format, va_list ap);
     int vasprintf(char  **strp,  const  char *format, va_list ap);
-    int vdprintf(int fd, const char *format, va_list ap);
 
     void perror(const char *s);
 

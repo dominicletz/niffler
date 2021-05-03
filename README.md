@@ -48,12 +48,24 @@ count_zeros_nif           6.87 K
 count_zeros_elixir        3.54 K - 1.94x slower +137.22 μs
 ```
 
+# Windows
+
+I've only tried compiling & running this under windows with the msys2 toolchain. For that you need to install dlfcn and export the rebar variables:
+
+```
+msys2-64 $> pacman -S mingw-w64-x86_64-dlfcn
+# and for the libgmp test:
+msys2-64 $> pacman -S mingw-w64-x86_64-gmp-6.2.0-3 
+
+msys2-64 $> export REBAR_TARGET_ARCH_WORDSIZE=64
+msys2-64 $> export REBAR_TARGET_ARCH=x86_64-w64-mingw32
+msys2-64 $> mix deps.get
+msys2-64 $> mix test
+```
+
 # Todos
 
 This library is work in progress. Feel free to open a PR to any of these:
 
-* Test on windows
-* Compile functions on module load not on first call
 * Use async thread to avoid blocking in long-running nifs
 * Better documentation
-* Include c-standard library libtcc1.a 

@@ -44,6 +44,9 @@ defmodule LibraryTest do
       """
       gmp = dlopen("libgmp.#{library_suffix()}", RTLD_LAZY);
       if (!gmp) {
+        gmp = dlopen("libgmp-10.#{library_suffix()}", RTLD_LAZY);
+      }
+      if (!gmp) {
         return "could not load libgmp";
       }
       #{Enum.join(symbols)}
