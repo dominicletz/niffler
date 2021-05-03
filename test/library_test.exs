@@ -42,7 +42,7 @@ defmodule LibraryTest do
         end)
 
       """
-      gmp = dlopen("libgmp.so", RTLD_LAZY);
+      gmp = dlopen("libgmp.#{library_suffix()}", RTLD_LAZY);
       if (!gmp) {
         return "could not load libgmp";
       }

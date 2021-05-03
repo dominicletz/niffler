@@ -43,6 +43,14 @@ defmodule Niffler.Library do
     end
   end
 
+  def library_suffix() do
+    case :os.type() do
+      {:unix, :darwin} -> "dylib"
+      {:unix, _} -> "so"
+      {:win32, _} -> "dll"
+    end
+  end
+
   @nifs :niffler_nifs
   def compile(module, header, on_load) do
     funs = Module.get_attribute(module, @nifs, [])
