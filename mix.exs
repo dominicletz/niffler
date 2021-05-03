@@ -2,6 +2,9 @@ defmodule Niffler.MixProject do
   use Mix.Project
 
   @version "0.3.0"
+  @name "Niffler"
+  @url "https://github.com/dominicletz/niffler"
+  @maintainers ["Dominic Letz"]
 
   def project do
     [
@@ -10,13 +13,14 @@ defmodule Niffler.MixProject do
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      name: "Niffler",
+      name: @name,
       compilers: [:rebar3] ++ Mix.compilers(),
       docs: docs(),
       package: package(),
-      homepage_url: "https://github.com/dominicletz/niffler",
+      homepage_url: @url,
       description: """
-      Just-In-Time nif generator
+      Just-In-Time nif generator, FFI generator, C-compiler based on TinyCC.
+      For Linux, MacOS, Windows (msys2)
       """
     ]
   end
@@ -39,21 +43,19 @@ defmodule Niffler.MixProject do
 
   defp docs do
     [
-      main: "introduction",
+      main: @name,
       source_ref: "v#{@version}",
-      source_url: "https://github.com/dominicletz/niffler",
-      extra_section: "GUIDES",
-      extras: [
-        "guides/introduction.md"
-      ]
+      source_url: @url,
+      authors: @maintainers,
+      logo: "img/niffler_logo.png"
     ]
   end
 
   defp package do
     [
-      maintainers: ["Dominic Letz"],
+      maintainers: @maintainers,
       licenses: ["MIT"],
-      links: %{github: "https://github.com/dominicletz/niffler"},
+      links: %{github: @url},
       files:
         ~w(c_src src lib priv) ++
           ~w(CHANGELOG.md LICENSE.md rebar.config mix.exs README.md)

@@ -67,5 +67,7 @@ msys2-64 $> mix test
 
 This library is work in progress. Feel free to open a PR to any of these:
 
-* Use async thread to avoid blocking in long-running nifs
-* Better documentation
+* Add nif options to:
+  * Use async thread to avoid blocking in long-running nifs
+  * Use mutex locks for non-thread-safe code
+* Add access to useful erlang enif_* functions

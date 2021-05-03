@@ -1,4 +1,5 @@
 defmodule Niffler.Stdlib do
+  @moduledoc false
   def include() do
     """
     /* Simple libc header for TCC
