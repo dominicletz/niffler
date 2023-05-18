@@ -97,8 +97,25 @@ defmodule Niffler.Library do
         :ok
       end
 
+      defmodule Types do
+        defmacro __using__(_opts) do
+        end
+      end
+
       import Niffler.Library
     end
+  end
+
+  defmacro ffi_lib(_arg) do
+  end
+
+  defmacro attach_function(_a, _b, _c) do
+  end
+
+  defmacro callback(_a, _b, _c) do
+  end
+
+  def at_exit(_fun) do
   end
 
   @doc """
@@ -229,7 +246,12 @@ defmodule Niffler.Library do
   @nifs :niffler_nifs
   @doc false
   def compile(module, header, on_load) do
-    funs = Module.get_attribute(module, @nifs, [])
+    funs =
+      if function_exported?(module, :__info__, 1) do
+        module.__info__(:attributes)[@nifs] || []
+      else
+        Module.get_attribute(module, @nifs, [])
+      end
 
     cases =
       Enum.with_index(funs)

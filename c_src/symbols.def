@@ -1,3 +1,8 @@
+X(memmove)
+X(memcpy)
+X(memset)
+X(malloc)
+X(calloc)
 X(free)
 X(atoi)
 X(strtol)
