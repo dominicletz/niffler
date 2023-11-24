@@ -1,6 +1,6 @@
 ![Niffler](https://github.com/dominicletz/niffler/blob/main/img/niffler.png?raw=true)
 
-# Niffler [![Build Status](https://travis-ci.com/dominicletz/niffler.svg?branch=main)](https://travis-ci.com/dominicletz/niffler)
+# Niffler ![Build](https://github.com/dominicletz/niffler/actions/workflows/test.yml/badge.svg)
 
 Niffler is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tcc/). Niffler allows converting small c fragments into nif backed functions *AT RUNTIME*.
 

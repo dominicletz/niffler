@@ -452,7 +452,7 @@ defmodule Niffler do
   defp value_name(:uint64), do: "uinteger64"
   defp value_name(:double), do: "doubleval"
   defp value_name(:binary), do: "binary"
-  defp value_name(other), do: raise "Unknown type #{other} in defnif"
+  defp value_name(other), do: raise("Unknown type #{other} in defnif")
 
   defp header() do
     """
