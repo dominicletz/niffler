@@ -46,3 +46,4 @@ c_src/tinycc/tccdefs_.h
 
 # Temporary helper script
 watch.sh   
+mix.lock
