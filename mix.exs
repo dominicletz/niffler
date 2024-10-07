@@ -1,7 +1,7 @@
 defmodule Niffler.MixProject do
   use Mix.Project
 
-  @version "0.3.1"
+  @version "0.3.2"
   @name "Niffler"
   @url "https://github.com/dominicletz/niffler"
   @maintainers ["Dominic Letz"]
