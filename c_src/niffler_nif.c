@@ -439,6 +439,16 @@ run(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 		// case TYPE_STRING:
 		case TYPE_BINARY:
 		{
+			if (param->binary.data == 0)
+			{
+				free_env(&user_env);
+				return error_result(env, "no result binary provided");
+			}
+
+			if (param->binary.size == 0) {
+				param->binary.size = strlen(param->binary.data);
+			}
+
 			unsigned char *bin = enif_make_new_binary(env, param->binary.size, &cell);
 			if (!bin)
 			{

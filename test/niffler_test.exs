@@ -19,6 +19,23 @@ defmodule NifflerTest do
     assert {:error, "parameter should be binary"} = count_zeros([])
   end
 
+  defnif :hello_wrong, [], ret: :binary do
+    """
+    "Hello from C";
+    """
+  end
+
+  defnif :hello_right, [], ret: :binary do
+    """
+    $ret.data = "Hello from C";
+    """
+  end
+
+  test "test hello" do
+    assert {:error, "no result binary provided"} = hello_wrong()
+    assert {:ok, ["Hello from C"]} = hello_right()
+  end
+
   defnif :fib, [a: :int], ret: :int do
     """
     int64_t fib(int64_t f) {

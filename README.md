@@ -18,6 +18,7 @@ Niffler is a C-JIT implemented is nif binding to [libtcc](https://bellard.org/tc
 defmodule Example do
   use Niffler
 
+  # Binaries (strings) have .data and .size
   defnif :count_zeros, [str: :binary], ret: :int do
     """
     while($str.size--) {
@@ -25,9 +26,17 @@ defmodule Example do
     }
     """
   end
+
+  # If binaries return size is 0, strlen() is used to get the size
+  defnif :hello, [], ret: :binary do
+    """
+    $ret.data = "Hello from C";
+    """
+  end
 end
 
 {:ok, [2]} = Example.count_zeros(<<0,11,0>>)
+{:ok, ["Hello from C"]} = Example.hello()
 ```
 
 # Benchmarks
