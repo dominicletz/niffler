@@ -87,7 +87,6 @@ defmodule Niffler.Library do
   defmacro __using__(_opts) do
     quote do
       @module __MODULE__
-      @nifs :niffler_nifs
       @on_load :pre_compile
       @behaviour Niffler.Library
 
@@ -195,13 +194,13 @@ defmodule Niffler.Library do
     key = {name, length(inputs)}
 
     quote do
-      nifs = Module.get_attribute(@module, @nifs, [])
+      nifs = Module.get_attribute(@module, :niffler_nifs, [])
       Module.put_attribute(@module, unquote(name), length(nifs))
       @idx length(nifs)
 
       Module.put_attribute(
         @module,
-        @nifs,
+        :niffler_nifs,
         nifs ++ [{unquote(key), unquote(inputs), unquote(outputs), unquote(source)}]
       )
 
@@ -243,14 +242,13 @@ defmodule Niffler.Library do
     end
   end
 
-  @nifs :niffler_nifs
   @doc false
   def compile(module, header, on_load) do
     funs =
       if function_exported?(module, :__info__, 1) do
-        module.__info__(:attributes)[@nifs] || []
+        module.__info__(:attributes)[:niffler_nifs] || []
       else
-        Module.get_attribute(module, @nifs, [])
+        Module.get_attribute(module, :niffler_nifs, [])
       end
 
     cases =
