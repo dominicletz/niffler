@@ -56,6 +56,10 @@ count_zeros_nif           6.87 K
 count_zeros_elixir        3.54 K - 1.94x slower +137.22 μs
 ```
 
+# Demo
+
+There is a `demo.exs` that spawns a phoenix app and shows a template with content from the inline c nif. All in one file
+
 # Windows
 
 I've only tried compiling & running this under windows with the [msys2](https://www.msys2.org/) toolchain. For that you need to install dlfcn and export the rebar variables:
