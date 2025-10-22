@@ -1,7 +1,7 @@
 defmodule Niffler.MixProject do
   use Mix.Project
 
-  @version "0.3.3"
+  @version "0.3.4"
   @name "Niffler"
   @url "https://github.com/dominicletz/niffler"
   @maintainers ["Dominic Letz"]
@@ -34,7 +34,7 @@ defmodule Niffler.MixProject do
 
   defp deps do
     [
-      {:mix_rebar3, "~> 0.2"},
+      {:mix_rebar3, "~> 0.3"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:benchee, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false}
