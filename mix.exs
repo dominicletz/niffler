@@ -57,8 +57,9 @@ defmodule Niffler.MixProject do
       licenses: ["MIT"],
       links: %{github: @url},
       files:
-        ~w(c_src src lib priv) ++
-          ~w(CHANGELOG.md LICENSE.md rebar.config mix.exs README.md)
+        ~w(c_src src lib priv/touch) ++
+          ~w(CHANGELOG.md LICENSE.md rebar.config mix.exs README.md),
+      exclude_patterns: [~r/.*\.[oda]$/]
     ]
   end
 end
